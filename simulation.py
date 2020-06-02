@@ -2,6 +2,7 @@ import sys
 import time
 
 import numpy as np
+from control_group import ControlGroup
 
 from utilities.event_heap import EventHeap
 from utilities.event_generator import EventGenerator
@@ -11,8 +12,6 @@ __author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
 
 class Simulation:
     """
-     144 and 356:
-          self.event_heap.push(self._MEASURE, self.time + self.measurement_period, 0)
     Simulation for a massive MIMO network in discrete time
 
     This class needs to be inherited to work properly, please see binary_simulation.py for implementation example
@@ -134,11 +133,20 @@ class Simulation:
                 d_settings = self.custom_control_arrivals[i].get('settings')
                 self.control_arrivals.append(EventGenerator(d, d_settings))
         else:
-            # Set default control arrival distribution
+            #Split the control nodes into two control groups
+            #Set default control arrival distribution
+            cg1 = ControlGroup()
+            cg2 = ControlGroup()
+            cg1.on = 0
+            cg2.on = 1
             self.control_arrival_distribution = config.get('default_control_arrival_distribution')
             control_arrival_parameters = config.get('control_arrival_distributions').get(
                 self.control_arrival_distribution)
-            self.control_arrivals = EventGenerator(self.control_arrival_distribution, control_arrival_parameters)
+            self.control_arrivals = []
+            for i in range(int(self.no_control_nodes/2)):
+                self.control_arrivals.append([cg1, 0, EventGenerator(self.control_arrival_distribution, control_arrival_parameters)])
+            for i in range(int(self.no_control_nodes/2) + 1, self.no_control_nodes + 1):
+                self.control_arrivals.append([cg2, 50, EventGenerator(self.control_arrival_distribution, control_arrival_parameters)])
 
         # Initialize nodes and their arrival times
         self.__initialize_control_arrival_nodes()
@@ -161,6 +169,7 @@ class Simulation:
         for i in range(self.no_control_nodes):
             max_attempts = None
             self._handle_seed()
+            cg = None
 
             # Extract custom arrival distribution
             if self.custom_control_arrivals is not None:
@@ -172,16 +181,18 @@ class Simulation:
                     self._handle_seed()
                     next_arrival *= np.random.rand()
             else:
-                next_arrival = self.control_arrivals.get_next()
+                next_arrival = self.control_arrivals[i][2].get_next()
 
                 # Spread if distribution is constant
                 if self.control_arrival_distribution == 'constant':
                     self._handle_seed()
                     next_arrival *= np.random.rand()
+                cg = self.control_arrivals[i][0]
+                on = self.control_arrivals[i][1]
 
-            self.event_heap.push(self._CONTROL_ARRIVAL, self.time + next_arrival, i, max_attempts)
+            self.event_heap.push(self._CONTROL_ARRIVAL, self.time + next_arrival, i, max_attempts, cg, on)
 
-    def __handle_event(self, event):
+    def __handle_event(self, event, cg=None, on=None):
         # Event switcher to determine correct action for an event
 
         event_actions = {
@@ -190,26 +201,47 @@ class Simulation:
             self._DEPARTURE: self.__handle_departure,
             self._MEASURE: self.__handle_measurement}
 
-        event_actions[event.type](event)
+        if cg is not None:
+            event_actions[event.type](event, cg, on)
+        else:
+            event_actions[event.type](event)
 
-    def __handle_control_arrival(self, event):
+    def __handle_control_arrival(self, event, cg=None, on=None):
         # Handle a control arrival event
+        if cg is not None:
+            cg = self.control_arrivals[event.node_id][0]
+            cg.on = on
+            #After a time out, the control group will send packets for as long as the interarrivalTime
+            #Then the control group will have another time out
+            if cg.on > 2*cg.interarrivalTime:
+                cg.on = 0
+            #Only if the control group's time out is over, it can queue transmissions
+            if cg.on>cg.interarrivalTime:
+                self.stats.stats['no_control_arrivals'] += 1
+                # Store event in send queue until departure (as LIFO)
+                self.send_queue.insert(0, event)
+            else:
+                self.stats.stats['no_control_arrivals'] += 1
+                # Store event in send queue until departure (as LIFO)
+                self.send_queue.insert(0, event)
 
-        self.stats.stats['no_control_arrivals'] += 1
-        # Store event in send queue until departure (as LIFO)
-        self.send_queue.insert(0, event)
         # Add new control arrival event to the event list
         self._handle_seed()
-
         max_attempts = None
 
         if self.custom_control_arrivals is not None:
             max_attempts = self.custom_control_arrivals[event.node_id].get('max_attempts')
             next_arrival = self.control_arrivals[event.node_id].get_next()
         else:
-            next_arrival = self.control_arrivals.get_next()
+            next_arrival = self.control_arrivals[event.node_id][2].get_next()
 
-        self.event_heap.push(self._CONTROL_ARRIVAL, self.time + next_arrival, event.node_id, max_attempts)
+        if cg is not None:
+             if cg.on > 2*cg.interarrivalTime:
+                 self.event_heap.push(self._CONTROL_ARRIVAL, self.time + next_arrival, event.node_id, max_attempts, cg, 0)
+             else:
+                 self.event_heap.push(self._CONTROL_ARRIVAL, self.time + next_arrival, event.node_id, max_attempts, cg, self.time + next_arrival)
+        else:
+            self.event_heap.push(self._CONTROL_ARRIVAL, self.time + next_arrival, event.node_id, max_attempts)
 
     def __handle_departure(self, event):
         # Handle a departure event
@@ -386,7 +418,11 @@ class Simulation:
                 sys.stdout.write(str1)
                 sys.stdout.flush()
 
-            self.__handle_event(next_event)
+            if next_event.cg is not None:
+                self.__handle_event(next_event, next_event.cg, next_event.on)
+            else:
+                self.__handle_event(next_event)
+
             if next_event.type == 1:
                 self.stats.stats['no_alarm_arrivals']+=1
 

@@ -19,7 +19,7 @@ class Event:
         Pilot id that is assigned during the simulation
     """
 
-    def __init__(self, event_type, event_time, node_id, max_attempts):
+    def __init__(self, event_type, event_time, node_id, max_attempts, cg=None, on=None):
         """
         Initializes a new event
 
@@ -41,3 +41,5 @@ class Event:
         self.attempts_left = max_attempts
         self.max_attempts = max_attempts
         self.pilot_id = -1
+        self.cg = cg
+        self.on = on
