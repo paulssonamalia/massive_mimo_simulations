@@ -1,8 +1,8 @@
-# massive-mimo-simulator
+# massive-mimo-simulator - on/off control traffic
 
 This repository provides a network simulator for a factory floor with a number
 of machines with control traffic and a number of alarm nodes with
-alarm traffic.
+alarm traffic. The control traffic is divided into two control groups that are active intermittently.
 
 This README provides a how-to for downloading and running the application. A brief
 introduction to the different design parameters is available under *Customizing*. Please refer
