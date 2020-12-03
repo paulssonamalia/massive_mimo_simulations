@@ -20,7 +20,7 @@ import numpy as np
 from utilities.stats import Stats
 from binary.binary_simulation import BinarySimulation as Simulation
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 class BinaryMain():
     def run(stats):
