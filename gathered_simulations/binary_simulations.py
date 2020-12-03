@@ -5,7 +5,7 @@ from utilities.stats import Stats
 from binary.binary_simulation import BinarySimulation as Simulation
 from binary.binary_main import BinaryMain as Main
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 if __name__ == '__main__':
     with open('../binary/default_config.json') as config_file:
