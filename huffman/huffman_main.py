@@ -15,7 +15,7 @@ from huffman.huffman_simulation import HuffmanSimulation as Simulation
 from huffman.huffman_tree import HuffmanTree
 from huffman.huffman_node import HuffmanNode
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 class HuffmanMain():
     def run(stats):
