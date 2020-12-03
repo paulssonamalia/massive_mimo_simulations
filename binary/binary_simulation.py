@@ -1,7 +1,7 @@
 import numpy as np
 from simulation import Simulation
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 
 class BinarySimulation(Simulation):
