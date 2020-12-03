@@ -2,7 +2,7 @@
 import numpy as np
 import math
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 
 class Stats:
