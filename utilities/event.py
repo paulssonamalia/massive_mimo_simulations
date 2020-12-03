@@ -1,4 +1,4 @@
-__author__ = "Amalia"
+__author__ = "Amalia Paulsson"
 
 
 class Event:
