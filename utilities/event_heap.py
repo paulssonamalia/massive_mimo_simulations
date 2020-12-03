@@ -1,7 +1,7 @@
 import heapq
 from utilities.event import Event
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 
 class EventHeap:
