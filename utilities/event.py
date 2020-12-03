@@ -1,4 +1,4 @@
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia"
 
 
 class Event:
