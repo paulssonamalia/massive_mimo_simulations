@@ -1,6 +1,6 @@
 import numpy as np
 
-__author__ = "Jon Stålhammar, Christian Lejdström, Emma Fitzgerald"
+__author__ = "Amalia Paulsson"
 
 
 class EventGenerator:
